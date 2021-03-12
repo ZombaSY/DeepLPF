@@ -5,7 +5,7 @@ This is a PyTorch implementation of the CVPR 2020 paper:
 
 Please cite the paper if you use this code
 
-Tested with Pytorch 1.7.1, Python 3.7.9
+Tested with Pytorch 0.3.1, Python 3.5
 
 Authors: Sean Moran (sean.j.moran@gmail.com), 
          Pierre Marza (pierre.marza@gmail.com)
@@ -16,9 +16,9 @@ To get this code working on your system / problem you will need to edit the
 data loading functions, as follows:
 
 1. main.py, change the paths for the data directories to point to your data
-directory
+directory (anything with "/aiml/data")
 
-2. data.py, lines 248, 256, change the folder names of the data input and
+2. data.py, lines 216, 224, change the folder names of the data input and
 output directories to point to your folder names
 '''
 import model
@@ -44,7 +44,6 @@ import shutil
 import argparse
 from shutil import copyfile
 from PIL import Image
-import logging
 import data
 from torchvision.transforms import ToTensor
 from torchvision.datasets import ImageFolder
@@ -61,40 +60,35 @@ from data import Adobe5kDataLoader, Dataset
 from abc import ABCMeta, abstractmethod
 import imageio
 import cv2
-from torch.utils.tensorboard import SummaryWriter
 from skimage.transform import resize
 import matplotlib
 matplotlib.use('agg')
 
 def main():
 
-    writer = SummaryWriter()
-
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     log_dirpath = "./log_" + timestamp
     os.mkdir(log_dirpath)
-
-    handlers = [logging.FileHandler(
-        log_dirpath + "/deep_lpf.log"), logging.StreamHandler()]
-    logging.basicConfig(
-        level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', handlers=handlers)
 
     parser = argparse.ArgumentParser(
         description="Train the DeepLPF neural network on image pairs")
 
     parser.add_argument(
-        "--num_epoch", type=int, required=False, help="Number of epoches (default 5000)", default=100000)
+        "--num_epoch", type=int, required=False, help="Number of epoches (default 5000)", default=1000)
     parser.add_argument(
         "--valid_every", type=int, required=False, help="Number of epoches after which to compute validation accuracy",
-        default=25)
+        default=50)
     parser.add_argument(
-        "--checkpoint_filepath", required=False, help="Location of checkpoint file", default=None)
+        "--checkpoint_filepath", required=False, help="Location of checkpoint file",
+        default=None)
     parser.add_argument(
         "--inference_img_dirpath", required=False,
-        help="Directory containing images to run through a saved DeepLPF model instance", default=None)
+        help="Directory containing images to run through a saved DeepLPF model instance",
+        default="/home/ubuntu/Volume/Sunyong/Danbi/dataset_CURL/210308_paper_dataset/DeepLPF_only/test")
     parser.add_argument(
         "--training_img_dirpath", required=False,
-        help="Directory containing images to train a DeepLPF model instance", default="/home/sjm213/adobe5k/adobe5k/")
+        help="Directory containing images to train a DeepLPF model instance",
+        default="/home/ubuntu/Volume/Sunyong/Danbi/dataset_CURL/210308_paper_dataset/DeepLPF_only/train")
 
     args = parser.parse_args()
     num_epoch = args.num_epoch
@@ -102,15 +96,15 @@ def main():
     checkpoint_filepath = args.checkpoint_filepath
     inference_img_dirpath = args.inference_img_dirpath
     training_img_dirpath = args.training_img_dirpath
+    num_workers = 2
 
-    logging.info('######### Parameters #########')
-    logging.info('Number of epochs: ' + str(num_epoch))
-    logging.info('Logging directory: ' + str(log_dirpath))
-    logging.info('Dump validation accuracy every: ' + str(valid_every))
-    logging.info('Training image directory: ' + str(training_img_dirpath))
-    logging.info('##############################')
+    print('######### Parameters #########')
+    print('Number of epochs: ' + str(num_epoch))
+    print('Logging directory: ' + str(log_dirpath))
+    print('Dump validation accuracy every: ' + str(valid_every))
+    print('Training image directory: ' + str(training_img_dirpath))
+    print('##############################')
 
-    
 
     if (checkpoint_filepath is not None) and (inference_img_dirpath is not None):
 
@@ -131,12 +125,12 @@ def main():
                                     is_inference=True)
 
         inference_data_loader = torch.utils.data.DataLoader(inference_dataset, batch_size=1, shuffle=False,
-                                                            num_workers=6)
+                                                            num_workers=num_workers)
 
         '''
         Performs inference on all the images in inference_img_dirpath
         '''
-        logging.info(
+        print(
             "Performing inference with images in directory: " + inference_img_dirpath)
 
         net = model.DeepLPFNet()
@@ -151,11 +145,9 @@ def main():
         inference_evaluator.evaluate(net, epoch=0)
 
     else:
-
         training_data_loader = Adobe5kDataLoader(data_dirpath=training_img_dirpath,
                                                  img_ids_filepath=training_img_dirpath+"/images_train.txt")
         training_data_dict = training_data_loader.load_data()
-
         training_dataset = Dataset(data_dict=training_data_dict, normaliser=1, is_valid=False)
 
         validation_data_loader = Adobe5kDataLoader(data_dirpath=training_img_dirpath,
@@ -163,23 +155,23 @@ def main():
         validation_data_dict = validation_data_loader.load_data()
         validation_dataset = Dataset(data_dict=validation_data_dict, normaliser=1, is_valid=True)
 
-        testing_data_loader = Adobe5kDataLoader(data_dirpath=training_img_dirpath,
-                                            img_ids_filepath=training_img_dirpath+"/images_test.txt")
+        testing_data_loader = Adobe5kDataLoader(data_dirpath=inference_img_dirpath,
+                                            img_ids_filepath=inference_img_dirpath+"/images_test.txt")
         testing_data_dict = testing_data_loader.load_data()
         testing_dataset = Dataset(data_dict=testing_data_dict, normaliser=1,is_valid=True)
 
         training_data_loader = torch.utils.data.DataLoader(training_dataset, batch_size=1, shuffle=True,
-                                                       num_workers=6)
+                                                       num_workers=num_workers)
         testing_data_loader = torch.utils.data.DataLoader(testing_dataset, batch_size=1, shuffle=False,
-                                                      num_workers=6)
+                                                      num_workers=num_workers)
         validation_data_loader = torch.utils.data.DataLoader(validation_dataset, batch_size=1,
                                                          shuffle=False,
-                                                         num_workers=6)
+                                                         num_workers=num_workers)
         net = model.DeepLPFNet()
         net.cuda(0)
 
-        logging.info('######### Network created #########')
-        logging.info('Architecture:\n' + str(net))
+        print('######### Network created #########')
+        print('Architecture:\n' + str(net))
 
         for name, param in net.named_parameters():
             if param.requires_grad:
@@ -209,6 +201,7 @@ def main():
         ssim_avg = 0.0
         batch_size = 1
         total_examples = 0
+        log_interval = 50
 
         for epoch in range(num_epoch):
 
@@ -239,11 +232,14 @@ def main():
                 examples += batch_size
                 total_examples+=batch_size
 
-                writer.add_scalar('Loss/train', loss.data[0], total_examples)
+                if batch_num % log_interval == 0:
+                    print('Loss/train: ', loss.data[0])
+                # writer.add_scalar('Loss/train', loss.data[0], total_examples)
 
-            logging.info('[%d] train loss: %.15f' %
+            print('[%d] train loss: %.15f' %
                          (epoch + 1, running_loss / examples))
-            writer.add_scalar('Loss/train_smooth', running_loss / examples, epoch + 1)
+
+            # writer.add_scalar('Loss/train_smooth', running_loss / examples, epoch + 1)
 
             # Valid loss
             '''
@@ -285,32 +281,26 @@ def main():
 
             if (epoch + 1) % valid_every == 0:
 
-                logging.info("Evaluating model on validation and test dataset")
+                # print("Evaluating model on validation and test dataset")
+                #
+                # valid_loss, valid_psnr, valid_ssim = validation_evaluator.evaluate(
+                #     net, epoch)
+                # test_loss, test_psnr, test_ssim = testing_evaluator.evaluate(
+                #     net, epoch)
+                #
+                # # update best validation set psnr
+                # if valid_psnr > best_valid_psnr:
+                #
+                #     print(
+                #         "Validation PSNR has increased. Saving the more accurate model to file: " + 'deeplpf_validpsnr_{}_validloss_{}_testpsnr_{}_testloss_{}_epoch_{}_model.pt'.format(valid_psnr,
+                #                                                                                                                                                                          valid_loss.tolist()[0], test_psnr, test_loss.tolist()[
+                #                                                                                                                                                                              0],
+                #                                                                                                                                                                          epoch))
 
-                valid_loss, valid_psnr, valid_ssim = validation_evaluator.evaluate(
-                    net, epoch)
-                test_loss, test_psnr, test_ssim = testing_evaluator.evaluate(
-                    net, epoch)
-
-                # update best validation set psnr
-                if valid_psnr > best_valid_psnr:
-
-                    logging.info(
-                        "Validation PSNR has increased. Saving the more accurate model to file: " + 'deeplpf_validpsnr_{}_validloss_{}_testpsnr_{}_testloss_{}_epoch_{}_model.pt'.format(valid_psnr,
-                                                                                                                                                                                         valid_loss.tolist()[0], test_psnr, test_loss.tolist()[
-                                                                                                                                                                                             0],
-                                                                                                                                                                                         epoch))
-
-                    best_valid_psnr = valid_psnr
-                    snapshot_prefix = os.path.join(
-                        log_dirpath, 'deeplpf')
-                    snapshot_path = snapshot_prefix + '_validpsnr_{}_validloss_{}_testpsnr_{}_testloss_{}_epoch_{}_model.pt'.format(valid_psnr,
-                                                                                                                                    valid_loss.tolist()[
-                                                                                                                                        0],
-                                                                                                                                    test_psnr, test_loss.tolist()[
-                                                                                                                                        0],
-                                                                                                                                    epoch)
-                    torch.save(net.state_dict(), snapshot_path)
+                snapshot_prefix = os.path.join(
+                    log_dirpath, 'deeplpf')
+                snapshot_path = snapshot_prefix + '_epoch_{}_model.pt'.format(epoch)
+                torch.save(net.state_dict(), snapshot_path)
 
                 net.train()
 

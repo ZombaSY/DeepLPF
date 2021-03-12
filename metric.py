@@ -5,7 +5,7 @@ This is a PyTorch implementation of the CVPR 2020 paper:
 
 Please cite the paper if you use this code
 
-Tested with Pytorch 1.7.1, Python 3.7.9
+Tested with Pytorch 0.3.1, Python 3.5
 
 Authors: Sean Moran (sean.j.moran@gmail.com), 
          Pierre Marza (pierre.marza@gmail.com)
@@ -160,23 +160,34 @@ class Evaluator():
                     psnr_avg += psnr_example
                     ssim_avg += ssim_example
                     
-                    if batch_num > 30:
-                        '''
-                        We save only the first 30 images down for time saving
-                        purposes
-                        '''
-                        continue
-                    else:
+                    # if batch_num > 30:
+                    #     '''
+                    #     We save only the first 30 images down for time saving
+                    #     purposes
+                    #     '''
+                    #     continue
+                    # else:
+                    #
+                    #     output_img_example = (
+                    #         output_img_batch_rgb[0, 0:3, :, :] * 255).astype('uint8')
+                    #     net_output_img_example = (
+                    #         net_output_img_example_rgb[0, 0:3, :, :] * 255).astype('uint8')
+                    #
+                    #     plt.imsave(out_dirpath + "/" + name[0].split(".")[0] + "_" + self.split_name.upper() + "_" + str(epoch + 1) + "_" + str(
+                    #         examples) + "_PSNR_" + str("{0:.3f}".format(psnr_example)) + "_SSIM_" + str(
+                    #         "{0:.3f}".format(ssim_example)) + ".jpg",
+                    #         ImageProcessing.swapimdims_3HW_HW3(net_output_img_example))
 
-                        output_img_example = (
+                    output_img_example = (
                             output_img_batch_rgb[0, 0:3, :, :] * 255).astype('uint8')
-                        net_output_img_example = (
+                    net_output_img_example = (
                             net_output_img_example_rgb[0, 0:3, :, :] * 255).astype('uint8')
 
-                        plt.imsave(out_dirpath + "/" + name[0].split(".")[0] + "_" + self.split_name.upper() + "_" + str(epoch + 1) + "_" + str(
-                            examples) + "_PSNR_" + str("{0:.3f}".format(psnr_example)) + "_SSIM_" + str(
-                            "{0:.3f}".format(ssim_example)) + ".jpg",
-                            ImageProcessing.swapimdims_3HW_HW3(net_output_img_example))
+                    plt.imsave(out_dirpath + "/" + name[0].split(".")[0] + "_" + self.split_name.upper() + "_" + str(
+                        epoch + 1) + "_" + str(
+                        examples) + "_PSNR_" + str("{0:.3f}".format(psnr_example)) + "_SSIM_" + str(
+                        "{0:.3f}".format(ssim_example)) + ".jpg",
+                               ImageProcessing.swapimdims_3HW_HW3(net_output_img_example))
 
                     del net_output_img_example_numpy
                     del net_output_img_example_rgb
@@ -184,6 +195,8 @@ class Evaluator():
                     del output_img_batch_numpy
                     del input_img_example
                     del output_img_batch
+
+                    print(batch_num)
 
         psnr_avg = psnr_avg / num_batches
         ssim_avg = ssim_avg / num_batches

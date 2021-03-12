@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="62ffb39e-c407-40b7-a6be-62a764ff483b" name="nipa">
+        <fileTransfer accessType="SFTP" host="101.101.174.210" port="16022" sshConfigId="080a788d-ce2b-418d-a43d-b677c65fac86" sshConfig="ubuntu@101.101.174.210:16022 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-#Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
-#This program is free software; you can redistribute it and/or modify it under the terms of the BSD 0-Clause License.
-#This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the BSD 0-Clause License for more details.
 '''
 This is a PyTorch implementation of the CVPR 2020 paper:
 "Deep Local Parametric Filters for Image Enhancement": https://arxiv.org/abs/2003.13985
 
 Please cite the paper if you use this code
 
-Tested with Pytorch 1.7.1, Python 3.7.9
+Tested with Pytorch 0.3.1, Python 3.5
 
 Authors: Sean Moran (sean.j.moran@gmail.com), 
          Pierre Marza (pierre.marza@gmail.com)
@@ -108,9 +105,9 @@ class Dataset(torch.utils.data.Dataset):
                     input_img = input_img.astype(np.uint8)
                     output_img = output_img.astype(np.uint8)
 
-                input_img = TF.to_pil_image(input_img)
+                input_img = TF.to_pil_image(input_img).convert('RGB')
                 input_img = TF.to_tensor(input_img)
-                output_img = TF.to_pil_image(output_img)
+                output_img = TF.to_pil_image(output_img).convert('RGB')
                 output_img = TF.to_tensor(output_img)
 
                 return {'input_img': input_img, 'output_img': output_img,
@@ -127,8 +124,8 @@ class Dataset(torch.utils.data.Dataset):
                     input_img = input_img.astype(np.uint8)
                     output_img = output_img.astype(np.uint8)
 
-                input_img = TF.to_pil_image(input_img)
-                output_img = TF.to_pil_image(output_img)
+                input_img = TF.to_pil_image(input_img).convert('RGB')
+                output_img = TF.to_pil_image(output_img).convert('RGB')
 
                 if not self.is_valid:
 
@@ -147,7 +144,6 @@ class Dataset(torch.utils.data.Dataset):
                 # Transform to tensor
                 input_img = TF.to_tensor(input_img)
                 output_img = TF.to_tensor(output_img)
-
 
                 return {'input_img': input_img, 'output_img': output_img,
                         'name': self.data_dict[idx]['input_img'].split("/")[-1]}
@@ -212,64 +208,72 @@ class Adobe5kDataLoader(DataLoader):
 
         logging.info("Loading Adobe5k dataset ...")
 
-        with open(self.img_ids_filepath) as f:
-            '''
-            Load the image ids into a list data structure
-            '''
-            image_ids = f.readlines()
-            # you may also want to remove whitespace characters like `\n` at the end of each line
-            image_ids_list = [x.rstrip() for x in image_ids]
+        # with open(self.img_ids_filepath) as f:
+        #     '''
+        #     Load the image ids into a list data structure
+        #     '''
+        #     image_ids = f.readlines()
+        #     # you may also want to remove whitespace characters like `\n` at the end of each line
+        #     image_ids_list = [x.rstrip() for x in image_ids]
+        #
+        # idx = 0
+        # idx_tmp = 0
+        # img_id_to_idx_dict = {}
+        #
+        # for root, dirs, files in os.walk(self.data_dirpath):
+        #     for file in files:
+        #         img_id = file.split("-")[0]
+        #
+        #         is_id_in_list = False
+        #         for img_id_test in image_ids_list:
+        #             if img_id_test == img_id:
+        #                 is_id_in_list = True
+        #                 break
+        #         if is_id_in_list:  # check that the image is a member of the appropriate training/test/validation split
+        #             if not img_id in img_id_to_idx_dict.keys():
+        #                 img_id_to_idx_dict[img_id] = idx
+        #                 self.data_dict[idx] = {}
+        #                 self.data_dict[idx]['input_img'] = None
+        #                 self.data_dict[idx]['output_img'] = None
+        #                 idx_tmp = idx
+        #                 idx += 1
+        #             else:
+        #                 idx_tmp = img_id_to_idx_dict[img_id]
+        #
+        #             if "input" in root:  # change this to the name of your
+        #                                 # input data folder
+        #
+        #                 input_img_filepath = file
+        #
+        #                 self.data_dict[idx_tmp]['input_img'] = root + \
+        #                     "/" + input_img_filepath
+        #
+        #             elif ("output" in root):  # change this to the name of your
+        #                                      # output data folder
+        #
+        #                 output_img_filepath = file
+        #
+        #                 self.data_dict[idx_tmp]['output_img'] = root + \
+        #                     "/" + output_img_filepath
+        #         else:
+        #             logging.debug("Excluding file with id: " + str(img_id))
+        #
+        # for idx, imgs in self.data_dict.items():
+        #     assert ('input_img' in imgs)
+        #     assert ('output_img' in imgs)
 
-        idx = 0
-        idx_tmp = 0
-        img_id_to_idx_dict = {}
+        data_dirpath_x = self.data_dirpath + '/A'
+        data_dirpath_y = self.data_dirpath + '/B'
 
-        for root, dirs, files in os.walk(self.data_dirpath):
+        x_img_name = os.listdir(data_dirpath_x)
+        y_img_name = os.listdir(data_dirpath_y)
 
-            for file in files:
+        x_img_name = sorted(x_img_name)
+        y_img_name = sorted(y_img_name)
 
-                img_id = file.split("-")[0]
-
-                is_id_in_list = False
-                for img_id_test in image_ids_list:
-                    if img_id_test == img_id:
-                        is_id_in_list = True
-                        break
-
-                if is_id_in_list:  # check that the image is a member of the appropriate training/test/validation split
-
-                    if not img_id in img_id_to_idx_dict.keys():
-                        img_id_to_idx_dict[img_id] = idx
-                        self.data_dict[idx] = {}
-                        self.data_dict[idx]['input_img'] = None
-                        self.data_dict[idx]['output_img'] = None
-                        idx_tmp = idx
-                        idx += 1
-                    else:
-                        idx_tmp = img_id_to_idx_dict[img_id]
-
-                    if "input" in root:  # change this to the name of your
-                                        # input data folder
-
-                        input_img_filepath = file
-
-                        self.data_dict[idx_tmp]['input_img'] = root + \
-                            "/" + input_img_filepath
-
-                    elif ("output" in root):  # change this to the name of your
-                                             # output data folder
-
-                        output_img_filepath = file
-
-                        self.data_dict[idx_tmp]['output_img'] = root + \
-                            "/" + output_img_filepath
-
-                else:
-
-                    logging.debug("Excluding file with id: " + str(img_id))
-
-        for idx, imgs in self.data_dict.items():
-            assert ('input_img' in imgs)
-            assert ('output_img' in imgs)
+        img_paths = zip(x_img_name, y_img_name)
+        for idx, item in enumerate(img_paths):
+            self.data_dict[idx]['input_img'] = data_dirpath_x + os.sep + item[0]
+            self.data_dict[idx]['output_img'] = data_dirpath_y + os.sep + item[1]
 
         return self.data_dict
